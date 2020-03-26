@@ -1,5 +1,5 @@
 .stack-work/
-paypal-payout-check.cabal
+paypal-notification-resend.cabal
 *~
 stack.yaml.lock
 
