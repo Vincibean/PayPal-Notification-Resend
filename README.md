@@ -1,1 +1,1 @@
-# paypal-payout-check
+# paypal-notification-resend

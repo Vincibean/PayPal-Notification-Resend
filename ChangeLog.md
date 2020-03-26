@@ -1,3 +1,3 @@
-# Changelog for paypal-payout-check
+# Changelog for paypal-notification-resend
 
 ## Unreleased changes
