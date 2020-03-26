@@ -1,21 +1,14 @@
 name:                paypal-notification-resend
 version:             0.1.0.0
-github:              "githubuser/paypal-notification-resend"
-license:             BSD3
-author:              "Author name here"
-maintainer:          "example@example.com"
-copyright:           "2020 Author name here"
+github:              "Vincibean/PayPal-Notification-Resend"
+license:             GPL-3.0
+author:              "Vincibean"
+maintainer:          "andrebessi00@gmail.com"
+copyright:           "2020 Vincibean"
 
 extra-source-files:
 - README.md
 
-# Metadata used when publishing your package
-# synopsis:            Short description of your package
-# category:            Web
-
-# To avoid duplicated efforts in documentation and dealing with the
-# complications of embedding Haddock markup inside cabal files, it is
-# common to point users to the README.md file.
 description:         Please see the README on GitHub at <https://github.com/githubuser/paypal-notification-resend#readme>
 
 dependencies:
