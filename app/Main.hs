@@ -52,7 +52,7 @@ main = do
     accessTokenResp <- postWith accessTokenOpts "https://api.paypal.com/v1/oauth2/token" accessTokenParams
     let accessToken = accessTokenResp ^. responseBody . key "access_token" . _String
 
-    let webhookEventsOpts = defaults & auth ?~ oauth2Bearer (encodeUtf8 accessToken) & header "Content-Type" .~ ["application/json"] & param "start_time" .~ ["2020-02-27T09:00:00Z"] & param "end_time" .~ ["2020-02-27T11:00:00Z"]
+    let webhookEventsOpts = defaults & auth ?~ oauth2Bearer (encodeUtf8 accessToken) & header "Content-Type" .~ ["application/json"] & param "start_time" .~ ["2020-02-27T09:00:00Z"] & param "end_time" .~ ["2020-02-27T11:00:00Z"] & param "page_size" .~ ["100"]
     webhookEventsResp <- getWith webhookEventsOpts "https://api.paypal.com/v1/notifications/webhooks-events"
     let webhookEventIds = webhookEventsResp ^.. responseBody . key "events" . values . key "id" . _String
 
