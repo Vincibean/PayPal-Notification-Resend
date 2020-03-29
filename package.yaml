@@ -20,6 +20,7 @@ dependencies:
 - aeson
 - lens-aeson
 - text
+- cmdargs
 
 library:
   source-dirs: src
