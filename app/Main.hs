@@ -43,10 +43,11 @@ paypal = PayPal
 
 main :: IO ()
 main = do
-    s <- cmdArgs paypal
-    let clientId = toStrict . pack . fromMaybe (error "No Client ID defined") . client_id $ s
-    let clientSecret = toStrict . pack . fromMaybe (error "No Client Secret defined") . client_secret $ s
-    let webhookId = fromMaybe (error "No WebHook ID defined") . webhook_id $ s
+    paypalArgs <- cmdArgs paypal
+    let clientId = toStrict . pack . fromMaybe (error "No Client ID defined") . client_id $ paypalArgs
+    let clientSecret = toStrict . pack . fromMaybe (error "No Client Secret defined") . client_secret $ paypalArgs
+    let webhookId = fromMaybe (error "No WebHook ID defined") . webhook_id $ paypalArgs
+
     let accessTokenOpts = defaults & auth ?~ basicAuth clientId clientSecret
     let accessTokenParams = ["grant_type" := clientCredentials]
     accessTokenResp <- postWith accessTokenOpts "https://api.paypal.com/v1/oauth2/token" accessTokenParams
