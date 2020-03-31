@@ -8,9 +8,10 @@ module Main where
 import           Control.Lens
 import           Data.Aeson
 import           Data.Aeson.Lens            (key, values, _String)
-import           Data.ByteString.Lazy       (ByteString, toStrict)
+import           Data.ByteString            (ByteString)
+import qualified Data.ByteString.Lazy       as LBS (ByteString, toStrict)
 import           Data.ByteString.Lazy.Char8 (pack)
-import           Data.Map                   as Map
+import qualified Data.Map                   as Map
 import           Data.Maybe                 (fromMaybe)
 import           Data.Text                  (Text, unpack)
 import           Data.Text.Encoding         (encodeUtf8)
@@ -44,28 +45,37 @@ paypal = PayPal
 main :: IO ()
 main = do
     paypalArgs <- cmdArgs paypal
-    let clientId = toStrict . pack . fromMaybe (error "No Client ID defined") . client_id $ paypalArgs
-    let clientSecret = toStrict . pack . fromMaybe (error "No Client Secret defined") . client_secret $ paypalArgs
+    let clientId = LBS.toStrict . pack . fromMaybe (error "No Client ID defined") . client_id $ paypalArgs
+    let clientSecret = LBS.toStrict . pack . fromMaybe (error "No Client Secret defined") . client_secret $ paypalArgs
     let webhookId = fromMaybe (error "No WebHook ID defined") . webhook_id $ paypalArgs
 
-    let accessTokenOpts = defaults & auth ?~ basicAuth clientId clientSecret
-    let accessTokenParams = ["grant_type" := clientCredentials]
-    accessTokenResp <- postWith accessTokenOpts "https://api.paypal.com/v1/oauth2/token" accessTokenParams
-    let accessToken = accessTokenResp ^. responseBody . key "access_token" . _String
+    accessToken <- accessToken clientId clientSecret
 
-    let webhookEventsOpts = defaults & auth ?~ oauth2Bearer (encodeUtf8 accessToken) & header "Content-Type" .~ ["application/json"] & param "start_time" .~ ["2020-02-27T09:00:00Z"] & param "end_time" .~ ["2020-02-27T11:00:00Z"] & param "page_size" .~ ["100"]
-    webhookEventsResp <- getWith webhookEventsOpts "https://api.paypal.com/v1/notifications/webhooks-events"
-    let webhookEventIds = webhookEventsResp ^.. responseBody . key "events" . values . key "id" . _String
+    webhookEventIds <- webhookEventIds accessToken
 
     resp <- traverse (resend webhookId accessToken . unpack) webhookEventIds
-
     let webhookEventResps = fmap (^. responseBody . key "id" . _String) resp
 
     putStrLn $ show webhookEventResps
 
 
-resend :: String -> Text -> String -> IO (Response ByteString)
+resend :: String -> Text -> String -> IO (Response LBS.ByteString)
 resend webhookId accessToken webhookEventId = do
     let webhookEventsOpts = defaults & auth ?~ oauth2Bearer (encodeUtf8 accessToken) & header "Content-Type" .~ ["application/json"]
     let webhookEventsParams = toJSON $ Webhooks [webhookId]
     postWith webhookEventsOpts ("https://api.paypal.com/v1/notifications/webhooks-events/" ++ webhookEventId ++ "/resend") webhookEventsParams
+
+accessToken :: ByteString -> ByteString -> IO Text
+accessToken clientId clientSecret = do
+  let accessTokenOpts = defaults & auth ?~ basicAuth clientId clientSecret
+  let accessTokenParams = ["grant_type" := clientCredentials]
+  accessTokenResp <- postWith accessTokenOpts "https://api.paypal.com/v1/oauth2/token" accessTokenParams
+  let accessToken = accessTokenResp ^. responseBody . key "access_token" . _String
+  return accessToken
+
+webhookEventIds :: Text -> IO [Text]
+webhookEventIds accessToken = do
+  let webhookEventsOpts = defaults & auth ?~ oauth2Bearer (encodeUtf8 accessToken) & header "Content-Type" .~ ["application/json"] & param "start_time" .~ ["2020-02-27T09:00:00Z"] & param "end_time" .~ ["2020-02-27T11:00:00Z"] & param "page_size" .~ ["100"]
+  webhookEventsResp <- getWith webhookEventsOpts "https://api.paypal.com/v1/notifications/webhooks-events"
+  let webhookEventIds = webhookEventsResp ^.. responseBody . key "events" . values . key "id" . _String
+  return webhookEventIds
