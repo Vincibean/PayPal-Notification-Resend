@@ -51,7 +51,7 @@ main = do
 
     accessToken <- accessToken clientId clientSecret
 
-    webhookEventIds <- webhookEventIds accessToken
+    (webhookEventIds, next) <- webhookEventIds accessToken
 
     resp <- traverse (resend webhookId accessToken . unpack) webhookEventIds
     let webhookEventResps = fmap (^. responseBody . key "id" . _String) resp
@@ -73,9 +73,10 @@ accessToken clientId clientSecret = do
   let accessToken = accessTokenResp ^. responseBody . key "access_token" . _String
   return accessToken
 
-webhookEventIds :: Text -> IO [Text]
+webhookEventIds :: Text -> IO ([Text], Maybe Text)
 webhookEventIds accessToken = do
   let webhookEventsOpts = defaults & auth ?~ oauth2Bearer (encodeUtf8 accessToken) & header "Content-Type" .~ ["application/json"] & param "start_time" .~ ["2020-02-27T09:00:00Z"] & param "end_time" .~ ["2020-02-27T11:00:00Z"] & param "page_size" .~ ["100"]
   webhookEventsResp <- getWith webhookEventsOpts "https://api.paypal.com/v1/notifications/webhooks-events"
   let webhookEventIds = webhookEventsResp ^.. responseBody . key "events" . values . key "id" . _String
-  return webhookEventIds
+  let next = webhookEventsResp ^? responseBody . key "links" . values . filtered (has (key "rel" . _String . (only "next"))) . key "href"._String
+  return (webhookEventIds, next)
