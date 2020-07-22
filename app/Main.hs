@@ -21,7 +21,7 @@ import           Network.Wreq
 import           System.Console.CmdArgs     (Data, Typeable, cmdArgs, def, help,
                                              program, summary, typ, (&=))
 
-data Webhooks = Webhooks { webhook_ids :: [String] } deriving (Show,Eq,Generic)
+newtype Webhooks = Webhooks { webhook_ids :: [String] } deriving (Show,Eq,Generic)
 
 instance ToJSON Webhooks
 
@@ -56,7 +56,7 @@ main = do
     resp <- traverse (resend webhookId accessToken . unpack) webhookEventIds
     let webhookEventResps = fmap (^. responseBody . key "id" . _String) resp
 
-    putStrLn $ show webhookEventResps
+    print webhookEventResps
 
 
 resend :: String -> Text -> String -> IO (Response LBS.ByteString)
@@ -78,5 +78,5 @@ webhookEventIds accessToken = do
   let webhookEventsOpts = defaults & auth ?~ oauth2Bearer (encodeUtf8 accessToken) & header "Content-Type" .~ ["application/json"] & param "start_time" .~ ["2020-02-27T09:00:00Z"] & param "end_time" .~ ["2020-02-27T11:00:00Z"] & param "page_size" .~ ["100"]
   webhookEventsResp <- getWith webhookEventsOpts "https://api.paypal.com/v1/notifications/webhooks-events"
   let webhookEventIds = webhookEventsResp ^.. responseBody . key "events" . values . key "id" . _String
-  let next = webhookEventsResp ^? responseBody . key "links" . values . filtered (has (key "rel" . _String . (only "next"))) . key "href"._String
+  let next = webhookEventsResp ^? responseBody . key "links" . values . filtered (has (key "rel" . _String . only "next")) . key "href"._String
   return (webhookEventIds, next)
